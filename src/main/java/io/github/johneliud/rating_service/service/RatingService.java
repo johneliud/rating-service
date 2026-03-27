@@ -80,4 +80,40 @@ public class RatingService {
         refreshAverageRating(rating.getMovieId());
         return toResponse(saved);
     }
+
+    @Transactional
+    public void delete(String id, String userId) {
+        log.debug("Deleting rating - id: {}, userId: {}", id, userId);
+
+        Rating rating = ratingRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Rating not found - id: {}", id);
+                    return new IllegalArgumentException("Rating not found with id: " + id);
+                });
+
+        if (!rating.getUserId().equals(userId)) {
+            log.warn("Ownership check failed - ratingId: {}, requestUserId: {}", id, userId);
+            throw new AccessDeniedException("You are not allowed to delete this rating");
+        }
+
+        String movieId = rating.getMovieId();
+        ratingRepository.deleteById(id);
+        log.info("Rating deleted - id: {}", id);
+
+        refreshAverageRating(movieId);
+    }
+
+    private void refreshAverageRating(String movieId) {
+        Double avg = ratingRepository.findAverageScoreByMovieId(movieId);
+        movieServiceClient.updateAverageRating(movieId, avg);
+    }
+
+    private RatingResponse toResponse(Rating rating) {
+        return new RatingResponse(
+                rating.getId(),
+                rating.getUserId(),
+                rating.getMovieId(),
+                rating.getScore(),
+                rating.getRatedAt());
+    }
 }
