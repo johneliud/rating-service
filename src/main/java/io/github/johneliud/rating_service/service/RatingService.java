@@ -47,4 +47,37 @@ public class RatingService {
         refreshAverageRating(request.movieId());
         return toResponse(saved);
     }
+
+    public List<RatingResponse> findByMovie(String movieId) {
+        log.debug("Fetching ratings for movieId: {}", movieId);
+        return ratingRepository.findByMovieId(movieId).stream().map(this::toResponse).toList();
+    }
+
+    public List<RatingResponse> findByUser(String userId) {
+        log.debug("Fetching ratings for userId: {}", userId);
+        return ratingRepository.findByUserId(userId).stream().map(this::toResponse).toList();
+    }
+
+    @Transactional
+    public RatingResponse update(String id, String userId, Integer score) {
+        log.debug("Updating rating - id: {}, userId: {}, score: {}", id, userId, score);
+
+        Rating rating = ratingRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.warn("Rating not found - id: {}", id);
+                    return new IllegalArgumentException("Rating not found with id: " + id);
+                });
+
+        if (!rating.getUserId().equals(userId)) {
+            log.warn("Ownership check failed - ratingId: {}, requestUserId: {}", id, userId);
+            throw new AccessDeniedException("You are not allowed to update this rating");
+        }
+
+        rating.setScore(score);
+        Rating saved = ratingRepository.save(rating);
+        log.info("Rating updated - id: {}, score: {}", id, score);
+
+        refreshAverageRating(rating.getMovieId());
+        return toResponse(saved);
+    }
 }
