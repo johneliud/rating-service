@@ -39,4 +39,17 @@ public class MovieServiceClient {
             throw new IllegalStateException("Movie service is unavailable. Please try again later.");
         }
     }
+
+    public void updateAverageRating(String movieId, Double averageRating) {
+        try {
+            restClient.patch()
+                    .uri("/api/movies/{id}/average-rating", movieId)
+                    .body(Map.of("averageRating", averageRating != null ? averageRating : 0.0))
+                    .retrieve()
+                    .toBodilessEntity();
+            log.debug("Updated averageRating for movieId: {} to {}", movieId, averageRating);
+        } catch (Exception ex) {
+            log.error("Failed to update averageRating for movieId: {}", movieId, ex);
+        }
+    }
 }
