@@ -45,4 +45,24 @@ public class RatingController {
         log.info("GET /api/ratings/user/{} - Fetching ratings", userId);
         return ResponseEntity.ok(ratingService.findByUser(userId));
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<RatingResponse> update(Authentication authentication,
+                                                  @PathVariable String id,
+                                                  @RequestBody @NotNull Integer score) {
+        String userId = authentication.getName();
+        log.info("PUT /api/ratings/{} - userId: {}, score: {}", id, userId, score);
+        RatingResponse response = ratingService.update(id, userId, score);
+        log.info("PUT /api/ratings/{} - Update successful", id);
+        return ResponseEntity.ok(response);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(Authentication authentication, @PathVariable String id) {
+        String userId = authentication.getName();
+        log.info("DELETE /api/ratings/{} - userId: {}", id, userId);
+        ratingService.delete(id, userId);
+        log.info("DELETE /api/ratings/{} - Deletion successful", id);
+        return ResponseEntity.noContent().build();
+    }
 }
